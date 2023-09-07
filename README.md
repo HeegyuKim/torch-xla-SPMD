@@ -1,8 +1,30 @@
 # torch-xla-SPMD
 Pytorch/XLA SPMD Test code in Google TPU 
 
+- SPMD는 정식 release에서 지원 안함. nightly 빌드를 써야하는데 docker 쓰는거 추천
 
 ## Setup
+
+### Use docker
+docker without sudo
+```
+sudo groupadd docker
+sudo usermod -aG docker ${USER}
+sudo service docker restart
+```
+
+run xla docker
+```
+sudo docker run -it --name torch \
+    -d --privileged \
+    -p 7860:7860 \
+    -v `pwd`:/workspace \
+    us-central1-docker.pkg.dev/tpu-pytorch-releases/docker/xla:nightly_3.10_tpuvm_20230901 \
+    /bin/bash
+
+sudo docker run -ti --rm --name your-container-name --privileged -v `pwd`:/workspace gcr.io/tpu-pytorch/xla:r2.0_3.8_tpuvm bash
+```
+
 ### Pytorch/XLA setup in TPU
 Guides: 
 - https://cloud.google.com/tpu/docs/run-calculation-pytorch?hl=ko#pjrt

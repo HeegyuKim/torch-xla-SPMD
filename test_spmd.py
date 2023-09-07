@@ -1,4 +1,5 @@
 import numpy as np
+import torch
 import torch_xla.runtime as xr
 import torch_xla.experimental.xla_sharding as xs
 from torch_xla.experimental.xla_sharding import Mesh
@@ -12,7 +13,14 @@ num_devices = xr.global_runtime_device_count()
 mesh_shape = (num_devices // 2, 2)
 device_ids = np.array(range(num_devices))
 # axis_names 'x' nad 'y' are optional
-mesh = Mesh(device_ids, mesh_shape, ('x', 'y'))
+mesh = Mesh(device_ids, mesh_shape, ('model', 'data'))
 
 print(mesh.get_logical_mesh())
 print(mesh.shape())
+
+
+partition_spec = ('model', 'data')
+
+input_tensor = torch.arange(10)
+print(input_tensor)
+xs.mark_sharding(device_ids, mesh, partition_spec)
