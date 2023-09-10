@@ -8,6 +8,7 @@ from transformers import AutoModelForCausalLM, AutoConfig, GPT2LMHeadModel
 from fsdp_gpt import FSDPLlamaModel
 from fsdp_peft import apply_fsdp
 from peft import LoraConfig, TaskType, get_peft_model
+from torch_xla.distributed.fsdp import XlaFullyShardedDataParallel as FSDP, checkpoint_module
 
 
 def fsdp_wrapper(x):

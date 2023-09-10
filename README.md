@@ -3,17 +3,25 @@ Pytorch/XLA SPMD Test code in Google TPU
 
 - SPMD는 정식 release에서 지원 안함. nightly 빌드를 써야하는데 docker 쓰는거 추천
 
+## SPMD OOM Check (20230901 nightly)
+- Architecture: GPT NeoX
+- batch_size: 1
+- Optimizer: AdamW
+
+### TPU v2-8
+| # params | seq_length | Inference  | Trainable / LoRA | 
+| --- | --- | --- | --- |
+| 1.4B | 2048 | ✅ | ✅ / ✅ |
+| 2.8B | 2048 | ✅ | 🤯 / ✅ |
+| 3.8B | 2048 | ✅ | 🤯 / 🤯 |
+| 5.8B | 2048 | ✅ | 🤯 / 🤯 |
+| 6.9B | 2048 | ✅ | 🤯 / 🤯 |
+| 12.8B | 2048 | ✅ | 🤯 / 🤯 |
+
+
 ## Setup
 
 ### Use docker
-docker without sudo
-```
-sudo groupadd docker
-sudo usermod -aG docker ${USER}
-sudo service docker restart
-```
-
-run xla docker
 ```
 sudo docker run -it --name torch \
     -d --privileged \
@@ -21,8 +29,6 @@ sudo docker run -it --name torch \
     -v `pwd`:/workspace \
     us-central1-docker.pkg.dev/tpu-pytorch-releases/docker/xla:nightly_3.10_tpuvm_20230901 \
     /bin/bash
-
-sudo docker run -ti --rm --name your-container-name --privileged -v `pwd`:/workspace gcr.io/tpu-pytorch/xla:r2.0_3.8_tpuvm bash
 ```
 
 ### Pytorch/XLA setup in TPU
