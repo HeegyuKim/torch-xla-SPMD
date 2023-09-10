@@ -29,19 +29,19 @@ mesh = Mesh(device_ids, mesh_shape, ('dp', 'fsdp', 'mp'))
 
 # EleutherAI/pythia-70m, 160m, 410m, 1b, 1.4b, 2.8b, 6.9b, 12b
 # EleutherAI/polyglot-ko-12.8b
-model_id = "EleutherAI/polyglot-ko-5.8b" 
+model_id = "EleutherAI/pythia-2.8b"
 config = AutoConfig.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_config(config)
 
 # LoRA
-peft_config = LoraConfig(task_type=TaskType.CAUSAL_LM, inference_mode=False, r=8, lora_alpha=32, lora_dropout=0.1)
-model = get_peft_model(model, peft_config)
-model.print_trainable_parameters()
+# peft_config = LoraConfig(task_type=TaskType.CAUSAL_LM, inference_mode=False, r=8, lora_alpha=32, lora_dropout=0.1)
+# model = get_peft_model(model, peft_config)
+# model.print_trainable_parameters()
 
 partition_module(model, mesh)
 
 batch_size = 1
-seq_length = 2048
+seq_length = 1024
 
 def train():
     optimizer = optim.AdamW(model.parameters())

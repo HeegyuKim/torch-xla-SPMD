@@ -1,22 +1,36 @@
 # torch-xla-SPMD
-Pytorch/XLA SPMD Test code in Google TPU 
-
+- Pytorch/XLA SPMD Test code in Google TPU.
+- 
 - SPMD는 정식 release에서 지원 안함. nightly 빌드를 써야하는데 docker 쓰는거 추천
 
 ## SPMD OOM Check (20230901 nightly)
+- code: [spmd_gpt.py](spmd_gpt.py)
 - Architecture: GPT NeoX
 - batch_size: 1
 - Optimizer: AdamW
+- Mesh: (1, 8, 1). Mesh shape이 바뀌면 OOM이 생기기도 합니다.
 
 ### TPU v2-8
 | # params | seq_length | Inference  | Trainable / LoRA | 
 | --- | --- | --- | --- |
 | 1.4B | 2048 | ✅ | ✅ / ✅ |
 | 2.8B | 2048 | ✅ | 🤯 / ✅ |
-| 3.8B | 2048 | ✅ | 🤯 / 🤯 |
-| 5.8B | 2048 | ✅ | 🤯 / 🤯 |
-| 6.9B | 2048 | ✅ | 🤯 / 🤯 |
-| 12.8B | 2048 | ✅ | 🤯 / 🤯 |
+| 3.8B | 2048 | ✅ | 🤯 / ✅ |
+| 5.8B | 2048 | ✅(4) | 🤯 / ✅ |
+| 6.9B | 2048 | ✅(2) | 🤯 / ✅(2) |
+| 12.8B | 2048 | ✅ | 🤯 / ✅ |
+
+() 괄호는 가능한 최대 배치크기, 표시 없을 경우 1
+
+### TPU v3-8
+| # params | seq_length | Inference  | Trainable / LoRA | 
+| --- | --- | --- | --- |
+| 1.4B | 2048 | ✅ | ✅ / ✅ |
+| 2.8B | 2048 | ✅ | ✅ / ✅ |
+| 3.8B | 2048 | ✅ | ✅ / ✅ |
+| 5.8B | 2048 | ✅ | 🤯 / ✅ |
+| 6.9B | 2048 | ✅(4) | 🤯 / ✅(4) |
+| 12.8B | 2048 | ✅(2) | 🤯 / ✅(1) |
 
 
 ## Setup
@@ -31,7 +45,9 @@ sudo docker run -it --name torch \
     /bin/bash
 ```
 
-### Pytorch/XLA setup in TPU
+### pip
+에러남... 확인중 일단 도커쓰세요
+
 Guides: 
 - https://cloud.google.com/tpu/docs/run-calculation-pytorch?hl=ko#pjrt
 - https://github.com/pytorch/xla
