@@ -34,9 +34,9 @@ config = AutoConfig.from_pretrained(model_id)
 model = AutoModelForCausalLM.from_config(config)
 
 # LoRA
-# peft_config = LoraConfig(task_type=TaskType.CAUSAL_LM, inference_mode=False, r=8, lora_alpha=32, lora_dropout=0.1)
-# model = get_peft_model(model, peft_config)
-# model.print_trainable_parameters()
+peft_config = LoraConfig(task_type=TaskType.CAUSAL_LM, inference_mode=False, r=8, lora_alpha=32, lora_dropout=0.1)
+model = get_peft_model(model, peft_config)
+model.print_trainable_parameters()
 
 partition_module(model, mesh)
 

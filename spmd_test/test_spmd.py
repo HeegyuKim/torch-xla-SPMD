@@ -1,5 +1,7 @@
 import numpy as np
 import torch
+import torch_xla
+import torch_xla.core.xla_model as xm
 import torch_xla.runtime as xr
 import torch_xla.experimental.xla_sharding as xs
 from torch_xla.experimental.xla_sharding import Mesh
@@ -21,6 +23,7 @@ print(mesh.shape())
 
 partition_spec = ('model', 'data')
 
-input_tensor = torch.arange(10)
+input_tensor = torch.arange(16).unsqueeze(0).repeat(8, 1).to(xm.xla_device())
 print(input_tensor)
-xs.mark_sharding(device_ids, mesh, partition_spec)
+xs.mark_sharding(input_tensor, mesh, partition_spec)
+print(input_tensor)
