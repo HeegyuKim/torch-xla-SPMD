@@ -4,7 +4,7 @@ import re
 import torch_xla.experimental.xla_sharding as xs
 import torch_xla.core.xla_model as xm
 from transformers import (
-    GPTNeoXConfig, T5Config, LlamaConfig
+    GPTNeoXConfig, T5Config, LlamaConfig, CLIPConfig, CLIPVisionConfig
 )
 
 # ends with $ to prevent sharding lora parameters
@@ -52,34 +52,48 @@ LLAMA_RULES = (
     ("lm_head", ("fsdp", "mp")),
     )
     
+CLIP_RULES = (
+    ("patch_embedding$", ("mp", "fsdp", None, None)),
+    ("position_embedding$", ("mp", "fsdp")),
+    ("self_attn\\.(q_proj|k_proj|v_proj)$", ("fsdp", "mp")),
+    ("self_attn\\.out_proj$", ("mp", "fsdp")),
+    ("mlp\\.fc1$", ("fsdp", "mp")),
+    ("mlp\\.fc2$", ("mp", "fsdp")),
+    ("visual_projection$", ("fsdp", "mp")),
+    ("text_projection$", ("fsdp", "mp")),
+    )
+    
 ALL_RULES = [
     (GPTNeoXConfig, GPTNEOX_RULES),
     (T5Config, T5_RULES),
-    (LlamaConfig, LLAMA_RULES)
+    (LlamaConfig, LLAMA_RULES),
+    (CLIPConfig, CLIP_RULES),
+    (CLIPVisionConfig, CLIP_RULES),
+    
 ]
 
 def find_rule(model):
     for config, rule in ALL_RULES:
         if model.config.__class__ == config:
             return rule
-    raise Exception("unsupported model to partitioning")
+    raise Exception("unsupported model to partitioning " + str(model.config.__class__))
 
 strkey2id = {
     "dp": 0,
     "fsdp": 1,
-    "mp": 2
+    "mp": 2,
 }
 
 def partition_module(model, mesh, device=xm.xla_device(), verbose=False):
     partition_specs = find_rule(model)
-    rule = [(k, tuple([strkey2id[x] for x in v])) for k, v in partition_specs]
+    rule = [(k, tuple([strkey2id.get(x) for x in v])) for k, v in partition_specs]
         
     # print(rule)
 
     for name, module in model.named_modules():
         module.to(device)
         # print(name, module.__class__.__name__)
-        if isinstance(module, (nn.Embedding, nn.Linear)):
+        if isinstance(module, (nn.Embedding, nn.Linear, nn.Conv1d, nn.Conv2d)):
             for rule_pattern, spec in rule:
                 if re.findall(rule_pattern, name):
                     if verbose:
