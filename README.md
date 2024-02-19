@@ -10,6 +10,7 @@ pip install -r requirements.txt
 
 # If you use conda, set your lib/ 
 export LD_LIBRARY_PATH=/path/to/conda/envs/your_env/lib
+# export LD_LIBRARY_PATH=$HOME/anaconda3/envs/easydel/lib/
 
 # for transformers library in TPU
 export USE_TORCH=True

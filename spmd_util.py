@@ -64,8 +64,8 @@ CLIP_RULES = (
     )
 
 LLAVA_RULES = (
-    ("multi_modal_projector\\.linear_1$", ("mp", "fsdp")),
-    ("multi_modal_projector\\.linear_2$", ("fsdp", "mp")),
+    ("multi_modal_projector\\.linear_1$", ("fsdp", "mp")),
+    ("multi_modal_projector\\.linear_2$", ("mp", "fsdp")),
     *LLAMA_RULES,
     *CLIP_RULES,
 )
