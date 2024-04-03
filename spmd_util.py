@@ -3,8 +3,10 @@ import torch.nn as nn
 import re
 import torch_xla.experimental.xla_sharding as xs
 import torch_xla.core.xla_model as xm
+from tqdm.auto import tqdm
 from transformers import (
-    GPTNeoXConfig, T5Config, LlamaConfig, CLIPConfig, CLIPVisionConfig, LlavaConfig
+    GPTNeoXConfig, T5Config, LlamaConfig, CLIPConfig, CLIPVisionConfig, LlavaConfig, GemmaConfig,
+    MistralConfig
 )
 
 # ends with $ to prevent sharding lora parameters
@@ -70,13 +72,26 @@ LLAVA_RULES = (
     *CLIP_RULES,
 )
     
+GEMMA_RULES = (
+    ("model\\.embed_tokens", ("mp", ("fsdp", "sp"))),
+    ("self_attn\\.(q_proj|k_proj|v_proj)", (("fsdp", "sp"), "mp")),
+    ("self_attn\\.o_proj", ("mp", ("fsdp", "sp"))),
+    ("mlp\\.gate_proj", (("fsdp", "sp"), "mp")),
+    ("mlp\\.down_proj", ("mp", ("fsdp", "sp"))),
+    ("mlp\\.up_proj", (("fsdp", "sp"), "mp")),
+    ("lm_head", (("fsdp", "sp"), "mp")),
+    ("score", (("fsdp", "sp"), "mp")),
+    )
+
 ALL_RULES = [
     (GPTNeoXConfig, GPTNEOX_RULES),
     (T5Config, T5_RULES),
     (LlamaConfig, LLAMA_RULES),
     (CLIPConfig, CLIP_RULES),
     (CLIPVisionConfig, CLIP_RULES),
-    (LlavaConfig, LLAVA_RULES,)
+    (LlavaConfig, LLAVA_RULES,),
+    (GemmaConfig, GEMMA_RULES),
+    (MistralConfig, LLAMA_RULES),
 ]
 
 def find_rule(model):
@@ -89,25 +104,35 @@ strkey2id = {
     "dp": 0,
     "fsdp": 1,
     "mp": 2,
+    "sp": 3,
 }
 
-def partition_module(model, mesh, device=xm.xla_device(), verbose=False):
+def partition_module(model, mesh, device='xla', verbose=False):
     partition_specs = find_rule(model)
     # rule = [(k, tuple([strkey2id.get(x) for x in v])) for k, v in partition_specs]
         
     # print(rule)
+    model.to(device)
 
-    for name, module in model.named_modules():
-        module.to(device)
+    for name, module in (tqdm(model.named_modules(), desc="partitioning model", disable=not verbose, position=0)):
+        if not hasattr(module, "weight") or not isinstance(module.weight, nn.Parameter):
+            continue
+        
+        find = False
         # print(name, module.__class__.__name__)
-        if isinstance(module, (nn.Embedding, nn.Linear, nn.Conv1d, nn.Conv2d)):
-            for rule_pattern, spec in partition_specs:
-                if re.findall(rule_pattern, name):
-                    if verbose:
-                        print("match", rule_pattern, name, spec)
-                    
-                    xs.mark_sharding(module.weight, mesh, spec)
-                    break
+        for rule_pattern, spec in partition_specs:
+            if re.findall(rule_pattern, name):
+                if verbose:
+                    print("match", rule_pattern, name, spec)
+                
+                xs.mark_sharding(module.weight, mesh, spec)
+                find = True
+                break
+            
+        if not find:
+            if verbose:
+                print(f"no match {module}", name, module.weight.size(), module.weight.dim())
+            xs.mark_sharding(module.weight, mesh, tuple([None] * module.weight.dim()))
         
 def partition_module_dp(model, mesh, device=xm.xla_device(), verbose=False):
     spec = (1, 2)
